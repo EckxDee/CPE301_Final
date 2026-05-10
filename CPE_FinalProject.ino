@@ -43,7 +43,7 @@ void buttonISR() {
   buttonPressed = true;
 }
 
-// Off butt pin
+// Off button pin
 int offButtonPin = 38;
 // Reset button pin
 int resetButtonPin = 36;
@@ -69,28 +69,30 @@ int distanceThreshold = 60;
 
 // Potentiometer initializing 
 void adcInit() {
-  *my_ADCSRA |= 0b10000000;   // enable ADC
-  *my_ADCSRA &= 0b11011111;   // disable auto trigger
-  *my_ADCSRA &= 0b11110111;   // disable ADC interrupt
-  *my_ADCSRA |= 0b00000111;   // prescaler = 128
+  *my_ADCSRA |= 0b10000000; // Enable ADC
+  *my_ADCSRA &= 0b11011111; // Disable ADC trigger
+  *my_ADCSRA &= 0b11110111; // Disable ADC interrupt
+  *my_ADCSRA |= 0b00000111; // Set presclar to 128
 
-  *my_ADCSRB &= 0b11110111;   // MUX5 = 0
-  *my_ADCSRB &= 0b11111000;   // free running mode bits cleared
+  // B register
+  *my_ADCSRB &= 0b11110111; // Reset channel and gain bits
+  *my_ADCSRB &= 0b11111000; // Free running mode
 
-  *my_ADMUX &= 0b01111111;    // REFS1 = 0
-  *my_ADMUX |= 0b01000000;    // REFS0 = 1 -> AVCC
-  *my_ADMUX &= 0b11011111;    // right adjust
-  *my_ADMUX &= 0b11100000;    // channel = 0
+  // MUX Register
+  *my_ADMUX &= 0b01111111; // Bit 7 to 0 for AVCC analog reference
+  *my_ADMUX |= 0b01000000; // Bit 6 to 1 for AVCC analog reference
+  *my_ADMUX &= 0b11011111; // Right adjust result
+  *my_ADMUX &= 0b11100000; // Reset channel
 
-  *my_DIDR0 |= 0b00000001;    // disable digital input on A0
+  *my_DIDR0 |= 0b00000001; // Disable digital input
 }
 
 unsigned int adcRead(uint8_t channel) {
-  *my_ADMUX &= 0b11100000;          // clear MUX4:0
-  *my_ADCSRB &= 0b11110111;         // clear MUX5
+  *my_ADMUX &= 0b11100000; // Clear the channel selection bits (MUX 4:0)
+  *my_ADCSRB &= 0b11110111; // Clear the selection bits (MUX 5)
   *my_ADMUX |= (channel & 0b00011111);
 
-  *my_ADCSRA |= 0b01000000;         // start conversion
+  *my_ADCSRA |= 0b01000000; // Start conversion
   while ((*my_ADCSRA & 0b01000000) != 0) { }
 
   return *my_ADC_DATA;
@@ -242,7 +244,9 @@ void loop() {
 
   // Reset button: resets system variables and returns to IDLE
   if (resetPressed()) {
-    if (ERROR) { reset(); } // Uncomment this if you want reset to work only if error is active
+    if (ERROR) {
+      reset();
+      }
     while (resetPressed()) {} // Waits until button is released
     return;
   }
@@ -430,6 +434,13 @@ void reset() {
   servo.write(servoAngle);
   doorOpen = false;
   buttonPressed = false;
+
+  // 5 second wait after reset has been pressed
+  logEvent("Cooldown started");
+  if (!waitMs(5000) || OFF) {
+    return;
+  }
+
   idleState();
 }
 
