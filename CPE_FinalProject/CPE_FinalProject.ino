@@ -1,3 +1,8 @@
+/*   Gerben Delos Reyes
+*    Automatic Pet Door
+*    May 9th, 2026
+*/   
+
 // Displaying Data
 long lastDisplayTime = 0;
 
